@@ -6,9 +6,11 @@
 .terraform.lock.hcl
 terraform.tfvars
 
-# OS
+# OS & Office
 .DS_Store
 Thumbs.db
+~$*
+*.tmp
 
 # IDE
 .vscode/
