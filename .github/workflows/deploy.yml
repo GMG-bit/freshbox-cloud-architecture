@@ -99,6 +99,30 @@ jobs:
             -backend-config="encrypt=true"
         working-directory: ./terraform
 
+      - name: Limpiar recursos huerfanos previos
+        run: |
+          # 1. Eliminar ALB previo si existe para que Terraform lo cree en la VPC correcta
+          ALB_ARN=$(aws elbv2 describe-load-balancers --names freshbox-alb --query 'LoadBalancers[0].LoadBalancerArn' --output text 2>/dev/null || true)
+          if [ -n "$ALB_ARN" ] && [ "$ALB_ARN" != "None" ]; then
+            echo "Eliminando ALB previo..."
+            aws elbv2 delete-load-balancer --load-balancer-arn "$ALB_ARN"
+            aws elbv2 wait load-balancers-deleted --load-balancer-arns "$ALB_ARN" 2>/dev/null || sleep 15
+          fi
+
+          # 2. Eliminar Target Group previo si existe
+          TG_ARN=$(aws elbv2 describe-target-groups --names freshbox-tg --query 'TargetGroups[0].TargetGroupArn' --output text 2>/dev/null || true)
+          if [ -n "$TG_ARN" ] && [ "$TG_ARN" != "None" ]; then
+            echo "Eliminando Target Group previo..."
+            aws elbv2 delete-target-group --target-group-arn "$TG_ARN" 2>/dev/null || true
+          fi
+
+          # 3. Eliminar CloudWatch Log Group previo si existe
+          aws logs delete-log-group --log-group-name "/ecs/freshbox" 2>/dev/null || true
+
+          # 4. Importar o limpiar Backup Vault si existe
+          aws backup delete-backup-vault --backup-vault-name "freshbox-backup-vault" 2>/dev/null || \
+          (cd terraform && terraform import aws_backup_vault.main freshbox-backup-vault 2>/dev/null) || true
+
       - name: Desplegar infraestructura completa con Terraform
         run: terraform apply -auto-approve
         working-directory: ./terraform
