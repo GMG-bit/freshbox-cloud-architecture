@@ -9,7 +9,7 @@ resource "aws_backup_vault" "main" {
 }
 
 resource "aws_backup_plan" "mysql" {
-  name = "${var.project_name}-mysql-backup-plan"
+  name = "${var.project_name}-mysql-plan"
 
   rule {
     rule_name         = "daily-backup"
