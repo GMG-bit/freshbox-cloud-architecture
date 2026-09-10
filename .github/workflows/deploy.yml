@@ -46,8 +46,12 @@ jobs:
         run: terraform init
         working-directory: ./terraform
 
-      - name: Crear repositorios ECR con Terraform
-        run: terraform apply -target=aws_ecr_repository.repos -auto-approve
+      - name: Asegurar repositorios ECR con Terraform
+        run: |
+          for repo in frontend get-products create-product update-product delete-product; do
+            terraform import "aws_ecr_repository.repos[\"$repo\"]" "freshbox-$repo" 2>/dev/null || true
+          done
+          terraform apply -target=aws_ecr_repository.repos -auto-approve
         working-directory: ./terraform
 
       - name: Iniciar sesion, compilar y subir imagenes Docker a ECR
