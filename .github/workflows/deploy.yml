@@ -1,0 +1,74 @@
+name: Deploy FreshBox ECS Fargate
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main" ]
+
+env:
+  AWS_REGION: us-east-1
+
+jobs:
+  deploy:
+    name: Build Containers & Deploy Infrastructure
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar codigo fuente
+        uses: actions/checkout@v4
+
+      - name: Configurar credenciales de AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Configurar Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Inicializar Terraform
+        run: terraform init
+        working-directory: ./terraform
+
+      - name: Crear repositorios ECR con Terraform
+        run: terraform apply -target=aws_ecr_repository.repos -auto-approve
+        working-directory: ./terraform
+
+      - name: Iniciar sesion en Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Construir y subir imagenes Docker a ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: latest
+        run: |
+          # Frontend
+          docker build --platform linux/amd64 -t $ECR_REGISTRY/freshbox-frontend:$IMAGE_TAG ./app/microservicioFrontend
+          docker push $ECR_REGISTRY/freshbox-frontend:$IMAGE_TAG
+          
+          # GET Products
+          docker build --platform linux/amd64 -t $ECR_REGISTRY/freshbox-get-products:$IMAGE_TAG ./app/microserviciosBackend/get-products
+          docker push $ECR_REGISTRY/freshbox-get-products:$IMAGE_TAG
+          
+          # POST Product
+          docker build --platform linux/amd64 -t $ECR_REGISTRY/freshbox-create-product:$IMAGE_TAG ./app/microserviciosBackend/create-product
+          docker push $ECR_REGISTRY/freshbox-create-product:$IMAGE_TAG
+          
+          # PUT Product
+          docker build --platform linux/amd64 -t $ECR_REGISTRY/freshbox-update-product:$IMAGE_TAG ./app/microserviciosBackend/update-product
+          docker push $ECR_REGISTRY/freshbox-update-product:$IMAGE_TAG
+          
+          # DELETE Product
+          docker build --platform linux/amd64 -t $ECR_REGISTRY/freshbox-delete-product:$IMAGE_TAG ./app/microserviciosBackend/delete-product
+          docker push $ECR_REGISTRY/freshbox-delete-product:$IMAGE_TAG
+
+      - name: Desplegar infraestructura completa con Terraform
+        run: terraform apply -auto-approve
+        working-directory: ./terraform
+
+      - name: Mostrar URLs y endpoints desplegados
+        run: terraform output
+        working-directory: ./terraform
