@@ -99,6 +99,10 @@ jobs:
             -backend-config="encrypt=true"
         working-directory: ./terraform
 
+      - name: Limpiar servicio ECS anterior si existe
+        run: |
+          aws ecs delete-service --cluster freshbox-cluster --service freshbox-service --force 2>/dev/null || true
+
       - name: Desplegar infraestructura completa con Terraform
         run: terraform apply -auto-approve
         working-directory: ./terraform
