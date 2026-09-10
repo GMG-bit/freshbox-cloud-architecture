@@ -16,11 +16,11 @@ output "alb_url" {
 output "ecr_repository_urls" {
   description = "URLs de los repositorios ECR"
   value = {
-    frontend       = aws_ecr_repository.repos["frontend"].repository_url
-    get_products   = aws_ecr_repository.repos["get-products"].repository_url
-    create_product = aws_ecr_repository.repos["create-product"].repository_url
-    update_product = aws_ecr_repository.repos["update-product"].repository_url
-    delete_product = aws_ecr_repository.repos["delete-product"].repository_url
+    frontend       = data.aws_ecr_repository.repos["frontend"].repository_url
+    get_products   = data.aws_ecr_repository.repos["get-products"].repository_url
+    create_product = data.aws_ecr_repository.repos["create-product"].repository_url
+    update_product = data.aws_ecr_repository.repos["update-product"].repository_url
+    delete_product = data.aws_ecr_repository.repos["delete-product"].repository_url
   }
 }
 

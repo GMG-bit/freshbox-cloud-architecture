@@ -37,28 +37,17 @@ jobs:
         run: |
           aws sts get-caller-identity
 
-      - name: Configurar Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_wrapper: false
-
-      - name: Inicializar Terraform
-        run: terraform init
-        working-directory: ./terraform
-
-      - name: Asegurar repositorios ECR con Terraform
-        run: |
-          for repo in frontend get-products create-product update-product delete-product; do
-            terraform import "aws_ecr_repository.repos[\"$repo\"]" "freshbox-$repo" 2>/dev/null || true
-          done
-          terraform apply -target=aws_ecr_repository.repos -auto-approve
-        working-directory: ./terraform
-
       - name: Iniciar sesion, compilar y subir imagenes Docker a ECR
         run: |
           ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
           ECR_REGISTRY="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
           IMAGE_TAG="latest"
+
+          # Asegurar que existan los 5 repositorios en ECR
+          for repo in frontend get-products create-product update-product delete-product; do
+            aws ecr describe-repositories --repository-names "freshbox-$repo" 2>/dev/null || \
+            aws ecr create-repository --repository-name "freshbox-$repo"
+          done
 
           # Login a Amazon ECR
           aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
@@ -82,6 +71,23 @@ jobs:
           # DELETE Product
           docker build --platform linux/amd64 -t $ECR_REGISTRY/freshbox-delete-product:$IMAGE_TAG ./app/microserviciosBackend/delete-product
           docker push $ECR_REGISTRY/freshbox-delete-product:$IMAGE_TAG
+
+      - name: Configurar Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: Restaurar estado de Terraform
+        uses: actions/cache@v4
+        with:
+          path: terraform/terraform.tfstate*
+          key: tfstate-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            tfstate-${{ runner.os }}-
+
+      - name: Inicializar Terraform
+        run: terraform init
+        working-directory: ./terraform
 
       - name: Desplegar infraestructura completa con Terraform
         run: terraform apply -auto-approve
