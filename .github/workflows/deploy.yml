@@ -17,16 +17,30 @@ jobs:
       - name: Descargar codigo fuente
         uses: actions/checkout@v4
 
-      - name: Configurar credenciales de AWS
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
-          aws-region: ${{ env.AWS_REGION }}
+      - name: Configurar y sanitizar credenciales de AWS
+        run: |
+          KEY=$(echo -n "${{ secrets.AWS_ACCESS_KEY_ID }}" | tr -d '\r\n"' | sed -e 's/.*AWS_ACCESS_KEY_ID=//I' | xargs)
+          SECRET=$(echo -n "${{ secrets.AWS_SECRET_ACCESS_KEY }}" | tr -d '\r\n"' | sed -e 's/.*AWS_SECRET_ACCESS_KEY=//I' | xargs)
+          TOKEN=$(echo -n "${{ secrets.AWS_SESSION_TOKEN }}" | tr -d '\r\n"' | sed -e 's/.*AWS_SESSION_TOKEN=//I' | xargs)
+
+          echo "::add-mask::$KEY"
+          echo "::add-mask::$SECRET"
+          echo "::add-mask::$TOKEN"
+
+          echo "AWS_ACCESS_KEY_ID=$KEY" >> $GITHUB_ENV
+          echo "AWS_SECRET_ACCESS_KEY=$SECRET" >> $GITHUB_ENV
+          echo "AWS_SESSION_TOKEN=$TOKEN" >> $GITHUB_ENV
+          echo "AWS_DEFAULT_REGION=us-east-1" >> $GITHUB_ENV
+          echo "AWS_REGION=us-east-1" >> $GITHUB_ENV
+
+      - name: Validar conexion con AWS
+        run: |
+          aws sts get-caller-identity
 
       - name: Configurar Terraform
         uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
 
       - name: Inicializar Terraform
         run: terraform init
@@ -37,8 +51,10 @@ jobs:
         working-directory: ./terraform
 
       - name: Iniciar sesion en Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
+        run: |
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+          echo "ECR_REGISTRY=$ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com" >> $GITHUB_ENV
 
       - name: Construir y subir imagenes Docker a ECR
         env:
