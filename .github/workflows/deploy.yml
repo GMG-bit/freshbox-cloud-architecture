@@ -77,16 +77,26 @@ jobs:
         with:
           terraform_wrapper: false
 
-      - name: Restaurar estado de Terraform
-        uses: actions/cache@v4
-        with:
-          path: terraform/terraform.tfstate*
-          key: tfstate-${{ runner.os }}-${{ github.run_id }}
-          restore-keys: |
-            tfstate-${{ runner.os }}-
+      - name: Asegurar bucket S3 para el estado de Terraform
+        run: |
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          BUCKET_NAME="freshbox-tfstate-${ACCOUNT_ID}"
+          echo "TF_BUCKET=$BUCKET_NAME" >> $GITHUB_ENV
+          
+          # Crear bucket si no existe
+          aws s3api head-bucket --bucket "$BUCKET_NAME" 2>/dev/null || \
+          aws s3 mb "s3://${BUCKET_NAME}" --region "$AWS_REGION"
+          
+          # Habilitar versionamiento (Buenas Practicas de Arquitectura)
+          aws s3api put-bucket-versioning --bucket "$BUCKET_NAME" --versioning-configuration Status=Enabled 2>/dev/null || true
 
-      - name: Inicializar Terraform
-        run: terraform init
+      - name: Inicializar Terraform con backend remoto S3
+        run: |
+          terraform init \
+            -backend-config="bucket=${TF_BUCKET}" \
+            -backend-config="key=freshbox/terraform.tfstate" \
+            -backend-config="region=${AWS_REGION}" \
+            -backend-config="encrypt=true"
         working-directory: ./terraform
 
       - name: Desplegar infraestructura completa con Terraform
