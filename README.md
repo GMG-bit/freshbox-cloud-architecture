@@ -188,7 +188,7 @@ Los contenedores de microservicios requieren las siguientes variables para conec
 
 ## 10. Autor
 
-**Estudiante**: Arquitecto Cloud en formación  
+**Estudiante**: Gaston Mardones González
 **Institución**: DuocUC  
 **Año**: 2026  
 **Asignatura**: ARY1102 Arquitectura Cloud
