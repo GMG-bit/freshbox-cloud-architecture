@@ -1,0 +1,66 @@
+name: Destroy FreshBox Infrastructure
+
+on:
+  workflow_dispatch:
+
+env:
+  AWS_REGION: us-east-1
+  AWS_DEFAULT_REGION: us-east-1
+
+jobs:
+  destroy:
+    name: Destroy Infrastructure with Terraform
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar codigo fuente
+        uses: actions/checkout@v4
+
+      - name: Configurar y sanitizar credenciales de AWS
+        run: |
+          KEY=$(echo -n "${{ secrets.AWS_ACCESS_KEY_ID }}" | tr -d '\r\n"' | sed -e 's/.*AWS_ACCESS_KEY_ID=//I' | xargs)
+          SECRET=$(echo -n "${{ secrets.AWS_SECRET_ACCESS_KEY }}" | tr -d '\r\n"' | sed -e 's/.*AWS_SECRET_ACCESS_KEY=//I' | xargs)
+          TOKEN=$(echo -n "${{ secrets.AWS_SESSION_TOKEN }}" | tr -d '\r\n"' | sed -e 's/.*AWS_SESSION_TOKEN=//I' | xargs)
+
+          echo "::add-mask::$KEY"
+          echo "::add-mask::$SECRET"
+          echo "::add-mask::$TOKEN"
+
+          echo "AWS_ACCESS_KEY_ID=$KEY" >> $GITHUB_ENV
+          echo "AWS_SECRET_ACCESS_KEY=$SECRET" >> $GITHUB_ENV
+          echo "AWS_SESSION_TOKEN=$TOKEN" >> $GITHUB_ENV
+          echo "AWS_DEFAULT_REGION=us-east-1" >> $GITHUB_ENV
+          echo "AWS_REGION=us-east-1" >> $GITHUB_ENV
+
+      - name: Validar conexion con AWS
+        run: |
+          aws sts get-caller-identity
+
+      - name: Configurar Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: Configurar bucket S3 para el estado de Terraform
+        run: |
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          CUSTOM_BUCKET=$(echo -n "${{ secrets.TF_STATE_BUCKET }}" | tr -d '\r\n" ' | xargs)
+          if [ -n "$CUSTOM_BUCKET" ]; then
+            BUCKET_NAME="$CUSTOM_BUCKET"
+          else
+            BUCKET_NAME="freshbox-tfstate-${ACCOUNT_ID}"
+          fi
+          echo "TF_BUCKET=$BUCKET_NAME" >> $GITHUB_ENV
+
+      - name: Inicializar Terraform con backend remoto S3
+        run: |
+          terraform init \
+            -backend-config="bucket=${TF_BUCKET}" \
+            -backend-config="key=freshbox/terraform.tfstate" \
+            -backend-config="region=${AWS_REGION}" \
+            -backend-config="encrypt=true"
+        working-directory: ./terraform
+
+      - name: Destruir infraestructura con Terraform
+        run: terraform destroy -auto-approve
+        working-directory: ./terraform

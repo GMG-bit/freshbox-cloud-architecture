@@ -80,7 +80,12 @@ jobs:
       - name: Asegurar bucket S3 para el estado de Terraform
         run: |
           ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-          BUCKET_NAME="freshbox-tfstate-${ACCOUNT_ID}"
+          CUSTOM_BUCKET=$(echo -n "${{ secrets.TF_STATE_BUCKET }}" | tr -d '\r\n" ' | xargs)
+          if [ -n "$CUSTOM_BUCKET" ]; then
+            BUCKET_NAME="$CUSTOM_BUCKET"
+          else
+            BUCKET_NAME="freshbox-tfstate-${ACCOUNT_ID}"
+          fi
           echo "TF_BUCKET=$BUCKET_NAME" >> $GITHUB_ENV
           
           # Crear bucket si no existe
