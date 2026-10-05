@@ -164,6 +164,9 @@ resource "aws_ecs_service" "main" {
   launch_type                       = "FARGATE"
   health_check_grace_period_seconds = 120
 
+  enable_ecs_managed_tags = true
+  propagate_tags          = "SERVICE"
+
   network_configuration {
     subnets          = aws_subnet.private_app[*].id
     security_groups  = [aws_security_group.app.id]
@@ -174,6 +177,17 @@ resource "aws_ecs_service" "main" {
     target_group_arn = aws_lb_target_group.app.arn
     container_name   = "frontend"
     container_port   = 80
+  }
+
+  tags = {
+    Name        = "${var.project_name}-service-app"
+    Component   = "containers-app"
+    Layer       = "app-private"
+    AutoScaling = "enabled"
+  }
+
+  lifecycle {
+    ignore_changes = [desired_count]
   }
 
   depends_on = [aws_lb_listener.http]

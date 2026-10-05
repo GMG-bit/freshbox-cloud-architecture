@@ -76,21 +76,43 @@ freshbox-cloud-architecture/
 │   ├── update-product/      # Microservicio Node.js (Actualización)
 │   └── delete-product/      # Microservicio Node.js (Eliminación)
 ├── terraform/
-│   ├── main.tf              # Configuración principal de Terraform
-│   ├── vpc.tf               # Redes, Subnets, Internet Gateway, NAT
-│   ├── security.tf          # Grupos de seguridad encadenados
+│   ├── main.tf              # Configuración del provider con default_tags corporativas
+│   ├── vpc.tf               # Redes, Subnets Multi-AZ, Internet Gateway, NAT
+│   ├── security-groups.tf   # Grupos de seguridad encadenados (ALB -> APP -> DATA)
 │   ├── ecr.tf               # Registro de contenedores
-│   ├── ecs.tf               # Cluster, Task Definitions, Servicios
+│   ├── ecs.tf               # Cluster, Task Definitions, Servicios con tags gestionados
+│   ├── autoscaling-ecs.tf   # Application Auto Scaling para contenedores (2 a 4 réplicas)
 │   ├── alb.tf               # Application Load Balancer
-│   ├── ec2.tf               # Instancia MySQL
-│   ├── backup.tf            # Configuración de AWS Backup
-│   ├── variables.tf         # Variables de entrada
-│   └── outputs.tf           # Valores de salida (ej. DNS del ALB)
+│   ├── ec2-mysql.tf         # Instancia MySQL con volumen EBS cifrado
+│   ├── backup.tf            # Configuración de AWS Backup para DR
+│   ├── budgets.tf           # AWS Budgets en código vinculados a etiquetas de costo
+│   ├── variables.tf         # Variables de entrada y mapa common_tags
+│   └── outputs.tf           # Valores de salida (DNS ALB, IDs de Auto Scaling, tags)
 ├── docs/
-│   └── informe-tecnico.md   # Informe detallado (Well-Architected, Justificación)
+│   ├── informe-tecnico.md   # Informe detallado (Well-Architected, Justificación)
+│   └── images/              # Evidencias y diagramas de arquitectura
 ├── docker-compose.yml       # Para pruebas locales
 └── README.md                # Este archivo
 ```
+
+## 4.1. Auto Scaling para Contenedores (ECS Fargate)
+
+La capa de contenedores cuenta con **Application Auto Scaling** gestionado en código (`autoscaling-ecs.tf`):
+- **Capacidad Mínima:** 2 tareas (garantizando redundancia Multi-AZ).
+- **Capacidad Máxima:** 4 tareas (absorbiendo picos de demanda del catálogo).
+- **Métrica CPU (Target Tracking):** Escala automáticamente para mantener un 70% de utilización promedio de CPU.
+- **Métrica Memoria (Target Tracking):** Escala automáticamente para mantener un 80% de utilización promedio de RAM.
+- **Alarmas CloudWatch:** Alertas proactivas ante saturación de cómputo en el clúster.
+
+## 4.2. Gobernanza FinOps, Cost Explorer y AWS Budgets
+
+El proyecto implementa un sistema estandarizado de **etiquetado para asignación de costos** (*Cost Allocation Tags*):
+- **Tags Corporativos:** `Project`, `Environment`, `ManagedBy`, `CostCenter`, `Owner`, `Application`, `BusinessUnit`.
+- **Propagación Automática:** Mediante `default_tags` en el provider de AWS y `propagate_tags = "SERVICE"` en ECS, cada tarea efímera hereda los tags.
+- **AWS Budgets en Código (`budgets.tf`):**
+  - Presupuesto mensual global ($150 USD) filtrado por `user:Project$freshbox` y `user:CostCenter$CC-102-ECOMMERCE`.
+  - Presupuesto mensual para contenedores ($80 USD) filtrado por `user:Component$containers-app`.
+  - Alertas automáticas por email ante el 70%, 85% de gasto real y 100% de gasto proyectado (*forecasted*).
 
 ## 5. Microservicios
 
