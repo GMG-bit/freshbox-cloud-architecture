@@ -1,97 +1,103 @@
+# ==============================================================================
+# Outputs de Infraestructura Cloud - EA2 (EKS + RDS Multi-AZ)
+# ==============================================================================
+
+# VPC y Red
 output "vpc_id" {
   description = "ID de la VPC"
   value       = aws_vpc.main.id
 }
 
-output "alb_dns_name" {
-  description = "DNS del Application Load Balancer"
-  value       = aws_lb.main.dns_name
+output "public_subnet_ids" {
+  description = "IDs de las subredes publicas (ALB Ingress / NAT Gateway)"
+  value       = aws_subnet.public[*].id
 }
 
-output "alb_url" {
-  description = "URL del Application Load Balancer"
-  value       = "http://${aws_lb.main.dns_name}"
+output "private_app_subnet_ids" {
+  description = "IDs de las subredes privadas de Aplicacion (EKS Worker Nodes)"
+  value       = aws_subnet.private_app[*].id
 }
 
+output "private_data_subnet_ids" {
+  description = "IDs de las subredes privadas de Datos (RDS MySQL Multi-AZ)"
+  value       = aws_subnet.private_data[*].id
+}
+
+output "nat_gateway_ip" {
+  description = "IP elastica publica del NAT Gateway"
+  value       = aws_eip.nat.public_ip
+}
+
+# Amazon EKS (Kubernetes)
+output "eks_cluster_name" {
+  description = "Nombre del cluster Amazon EKS"
+  value       = aws_eks_cluster.main.name
+}
+
+output "eks_cluster_endpoint" {
+  description = "Endpoint de la API del cluster EKS"
+  value       = aws_eks_cluster.main.endpoint
+}
+
+output "eks_cluster_arn" {
+  description = "ARN del cluster EKS"
+  value       = aws_eks_cluster.main.arn
+}
+
+output "eks_cluster_version" {
+  description = "Version de Kubernetes del cluster"
+  value       = aws_eks_cluster.main.version
+}
+
+output "eks_node_group_name" {
+  description = "Nombre del Node Group administrado de EKS"
+  value       = aws_eks_node_group.main.node_group_name
+}
+
+output "eks_node_group_status" {
+  description = "Estado del Node Group de EKS"
+  value       = aws_eks_node_group.main.status
+}
+
+# Amazon RDS MySQL Multi-AZ
+output "rds_endpoint" {
+  description = "Endpoint de conexion a la base de datos RDS MySQL Multi-AZ"
+  value       = aws_db_instance.main.endpoint
+}
+
+output "rds_address" {
+  description = "Direccion DNS del host de la base de datos RDS MySQL"
+  value       = aws_db_instance.main.address
+}
+
+output "rds_port" {
+  description = "Puerto de conexion a MySQL"
+  value       = aws_db_instance.main.port
+}
+
+output "rds_database_name" {
+  description = "Nombre de la base de datos creada en RDS"
+  value       = aws_db_instance.main.db_name
+}
+
+output "rds_multi_az" {
+  description = "Indica si RDS esta configurado en Multi-AZ"
+  value       = aws_db_instance.main.multi_az
+}
+
+# Amazon ECR
 output "ecr_repository_urls" {
-  description = "URLs de los repositorios ECR"
-  value = {
-    frontend       = data.aws_ecr_repository.repos["frontend"].repository_url
-    get_products   = data.aws_ecr_repository.repos["get-products"].repository_url
-    create_product = data.aws_ecr_repository.repos["create-product"].repository_url
-    update_product = data.aws_ecr_repository.repos["update-product"].repository_url
-    delete_product = data.aws_ecr_repository.repos["delete-product"].repository_url
-  }
+  description = "URLs de los repositorios ECR para cada microservicio"
+  value       = { for k, v in aws_ecr_repository.repos : k => v.repository_url }
 }
 
-output "mysql_private_ip" {
-  description = "IP privada del EC2 MySQL"
-  value       = aws_instance.mysql.private_ip
+# Comandos de ayuda inmediata para el estudiante
+output "kubeconfig_command" {
+  description = "Comando para configurar kubectl con el cluster EKS"
+  value       = "aws eks update-kubeconfig --region ${var.aws_region} --name ${aws_eks_cluster.main.name}"
 }
 
-output "ecs_cluster_name" {
-  description = "Nombre del cluster ECS"
-  value       = aws_ecs_cluster.main.name
+output "instruction_next_steps" {
+  description = "Pasos para desplegar la aplicacion en EKS"
+  value       = "1. Ejecuta: aws eks update-kubeconfig --region ${var.aws_region} --name ${aws_eks_cluster.main.name} | 2. Sube las imagenes con scripts/build-and-push.sh | 3. Aplica los manifiestos con: kubectl apply -f k8s/"
 }
-
-output "ecs_service_name" {
-  description = "Nombre del servicio ECS"
-  value       = aws_ecs_service.main.name
-}
-
-# -----------------------------------------------------------------------------
-# Outputs de Auto Scaling para Contenedores
-# -----------------------------------------------------------------------------
-output "autoscaling_target_id" {
-  description = "ID del target de Auto Scaling del servicio ECS"
-  value       = aws_appautoscaling_target.ecs.id
-}
-
-output "autoscaling_cpu_policy_arn" {
-  description = "ARN de la politica de auto scaling por CPU"
-  value       = aws_appautoscaling_policy.cpu.arn
-}
-
-output "autoscaling_memory_policy_arn" {
-  description = "ARN de la politica de auto scaling por memoria"
-  value       = aws_appautoscaling_policy.memory.arn
-}
-
-output "autoscaling_capacity_range" {
-  description = "Rango de escalamiento de tareas/contenedores (Min - Max)"
-  value = {
-    min_capacity = aws_appautoscaling_target.ecs.min_capacity
-    max_capacity = aws_appautoscaling_target.ecs.max_capacity
-  }
-}
-
-# -----------------------------------------------------------------------------
-# Outputs del Sistema de Etiquetado y FinOps
-# -----------------------------------------------------------------------------
-output "common_tags" {
-  description = "Etiquetas comunes aplicadas para asignacion de costos en Cost Explorer y Budgets"
-  value       = var.common_tags
-}
-
-output "cost_allocation_keys" {
-  description = "Claves de etiquetas recomendadas para activar en AWS Cost Allocation Tags"
-  value = [
-    "Project",
-    "Environment",
-    "CostCenter",
-    "Component",
-    "Application",
-    "Owner"
-  ]
-}
-
-output "budgets_configured" {
-  description = "Detalle de los presupuestos configurados en AWS Budgets"
-  value = var.enable_aws_budget ? {
-    global_budget_name     = aws_budgets_budget.freshbox_global[0].name
-    global_budget_limit    = "${aws_budgets_budget.freshbox_global[0].limit_amount} ${aws_budgets_budget.freshbox_global[0].limit_unit}"
-    containers_budget_name = aws_budgets_budget.freshbox_containers[0].name
-    notification_recipient = var.budget_notification_email
-  } : null
-}
-
