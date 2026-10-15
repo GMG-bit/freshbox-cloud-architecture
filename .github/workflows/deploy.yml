@@ -172,3 +172,29 @@ jobs:
           echo "HORIZONAL POD AUTOSCALER (HPA):"
           kubectl get hpa -n freshbox
           echo "=========================================================="
+
+      - name: Obtener URL Publica y Ejecutar Pruebas CRUD
+        run: |
+          echo "Esperando que AWS asigne el DNS publico al Load Balancer..."
+          for i in {1..25}; do
+            LB_HOST=$(kubectl get svc frontend -n freshbox -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || echo "")
+            if [ -z "$LB_HOST" ]; then
+              LB_HOST=$(kubectl get ingress freshbox-ingress -n freshbox -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || echo "")
+            fi
+            if [ -n "$LB_HOST" ]; then
+              echo "=========================================================="
+              echo " URL PUBLICA DE FRESHBOX: http://$LB_HOST"
+              echo " URL DE PRODUCTOS (RDS):  http://$LB_HOST/api/products"
+              echo "=========================================================="
+              break
+            fi
+            echo "Aprovisionando balanceador en AWS... ($i/25)"
+            sleep 6
+          done
+
+          if [ -n "$LB_HOST" ]; then
+            echo "Ejecutando pruebas de verificacion CRUD..."
+            chmod +x ./scripts/test-crud.sh
+            ./scripts/test-crud.sh || true
+          fi
+

@@ -88,13 +88,13 @@ resource "aws_security_group" "eks_nodes" {
     security_groups = [aws_security_group.eks_cluster.id]
   }
 
-  # Trafico entrante desde ALB Ingress
+  # Trafico entrante desde Load Balancer / ALB Ingress
   ingress {
-    description     = "Trafico HTTP Frontend desde ALB Ingress"
-    from_port       = 80
-    to_port         = 80
-    protocol        = "tcp"
-    security_groups = [aws_security_group.alb.id]
+    description = "Trafico HTTP Frontend desde Load Balancer"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   ingress {
@@ -106,11 +106,11 @@ resource "aws_security_group" "eks_nodes" {
   }
 
   ingress {
-    description     = "Rango NodePort de Kubernetes para balanceo"
-    from_port       = 30000
-    to_port         = 32767
-    protocol        = "tcp"
-    security_groups = [aws_security_group.alb.id]
+    description = "Rango NodePort de Kubernetes para balanceo de carga"
+    from_port   = 30000
+    to_port     = 32767
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
