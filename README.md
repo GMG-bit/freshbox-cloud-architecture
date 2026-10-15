@@ -43,11 +43,11 @@ graph TD
         ALB -->|Ruta / | Svc_Front[Service: frontend :80\nClusterIP]
         ALB -->|Ruta /api/products| Svc_Get[Service: get-products :3001\nClusterIP]
 
-        subgraph Subredes_Publicas ["Subredes Públicas (10.0.0.0/26, 10.0.0.64/26)"]
+        subgraph Subredes_Publicas ["Subredes Públicas (10.0.0.0/25, 10.0.0.128/25)"]
             NAT[NAT Gateway\nSalida segura a Internet]
         end
 
-        subgraph Subredes_Privadas_App ["Capa de Aplicación: EKS Worker Nodes (10.0.1.0/26, 10.0.1.64/26)"]
+        subgraph Subredes_Privadas_App ["Capa de Aplicación: EKS Worker Nodes (10.0.1.0/25, 10.0.1.128/25)"]
             subgraph NodeGroup ["EKS Managed Node Group (2 a 4 nodos Multi-AZ)"]
                 subgraph Pods_Namespace ["Namespace: freshbox (10 Pods en Ejecución)"]
                     Pod_Front1[Pod: frontend-1]
@@ -65,7 +65,7 @@ graph TD
             end
         end
 
-        subgraph Subredes_Privadas_Data ["Capa de Datos: Amazon RDS PaaS (10.0.2.0/26, 10.0.2.64/26)"]
+        subgraph Subredes_Privadas_Data ["Capa de Datos: Amazon RDS PaaS (10.0.2.0/25, 10.0.2.128/25)"]
             RDS_Primary[(RDS MySQL Primaria\nus-east-1a\nLectura / Escritura)]
             RDS_Standby[(RDS MySQL Standby\nus-east-1b\nReplicación Sincrónica)]
             RDS_Primary <-->|Replicación Síncrona| RDS_Standby

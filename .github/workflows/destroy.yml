@@ -61,6 +61,16 @@ jobs:
             -backend-config="encrypt=true"
         working-directory: ./terraform
 
-      - name: Destruir infraestructura con Terraform
+      - name: Liberar recursos de Kubernetes y Load Balancers previos
+        run: |
+          echo "Conectando a EKS para eliminar Load Balancers e Ingress antes de Terraform Destroy..."
+          aws eks update-kubeconfig --region $AWS_REGION --name freshbox-cluster 2>/dev/null || true
+          kubectl delete ingress --all -n freshbox --timeout=60s 2>/dev/null || true
+          kubectl delete svc --all -n freshbox --timeout=60s 2>/dev/null || true
+          kubectl delete namespace freshbox --timeout=60s 2>/dev/null || true
+          echo "Pausa preventiva para desasociar ENIs y ALBs..."
+          sleep 20
+
+      - name: Destruir infraestructura completa con Terraform
         run: terraform destroy -auto-approve
         working-directory: ./terraform

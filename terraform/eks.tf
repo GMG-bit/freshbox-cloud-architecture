@@ -37,6 +37,7 @@ resource "aws_eks_node_group" "main" {
   }
 
   instance_types = [var.eks_node_instance_type]
+  ami_type       = var.eks_ami_type
   capacity_type  = "ON_DEMAND"
   disk_size      = 20
 

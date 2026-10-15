@@ -20,9 +20,14 @@ if [ -z "$ALB_DNS" ]; then
 fi
 
 if [ -z "$ALB_DNS" ]; then
-    echo "ERROR: No se detecto hostname de ALB asignado al Ingress todavia."
-    echo "Verifica que el AWS Load Balancer Controller este activo y saludable."
-    exit 1
+    echo "Consultando Service LoadBalancer de frontend en namespace $NAMESPACE..."
+    ALB_DNS=$(kubectl get svc frontend -n "$NAMESPACE" -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || echo "")
+fi
+
+if [ -z "$ALB_DNS" ]; then
+    echo "AVISO: No se detecto hostname publico de ALB asignado todavia (toma ~2 minutos)."
+    echo "Puedes volver a ejecutar este script en 60 segundos."
+    exit 0
 fi
 
 echo "ALB Hostname: $ALB_DNS"

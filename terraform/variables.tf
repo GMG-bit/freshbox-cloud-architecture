@@ -19,19 +19,19 @@ variable "vpc_cidr" {
 variable "public_subnet_cidrs" {
   description = "CIDRs para subredes publicas (ALB Ingress / NAT Gateway)"
   type        = list(string)
-  default     = ["10.0.0.0/26", "10.0.0.64/26"]
+  default     = ["10.0.0.0/25", "10.0.0.128/25"]
 }
 
 variable "private_app_subnet_cidrs" {
   description = "CIDRs para subredes privadas APP (EKS Worker Nodes / Pods)"
   type        = list(string)
-  default     = ["10.0.1.0/26", "10.0.1.64/26"]
+  default     = ["10.0.1.0/25", "10.0.1.128/25"]
 }
 
 variable "private_data_subnet_cidrs" {
   description = "CIDRs para subredes privadas DATA (RDS MySQL Multi-AZ)"
   type        = list(string)
-  default     = ["10.0.2.0/26", "10.0.2.64/26"]
+  default     = ["10.0.2.0/25", "10.0.2.128/25"]
 }
 
 # -----------------------------------------
@@ -46,7 +46,13 @@ variable "eks_version" {
 variable "eks_node_instance_type" {
   description = "Tipo de instancia EC2 para los worker nodes del EKS Node Group"
   type        = string
-  default     = "t3.medium"
+  default     = "t4g.small"
+}
+
+variable "eks_ami_type" {
+  description = "Tipo de AMI para los worker nodes del EKS Node Group (ARM64 para t4g)"
+  type        = string
+  default     = "AL2023_ARM_64_STANDARD"
 }
 
 variable "eks_node_desired_size" {
@@ -73,7 +79,7 @@ variable "eks_node_max_size" {
 variable "db_instance_class" {
   description = "Clase de instancia para la base de datos RDS MySQL Multi-AZ"
   type        = string
-  default     = "db.t4g.micro"
+  default     = "db.t4g.small"
 }
 
 variable "db_user" {
