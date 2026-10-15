@@ -13,7 +13,13 @@ echo " Inicializando base de datos en Amazon RDS MySQL Multi-AZ"
 echo "=========================================================="
 
 # 1. Obtener Endpoint de RDS
-RDS_HOST=$(aws rds describe-db-instances --db-instance-identifier "${PROJECT_NAME}-db" --region "$REGION" --query "DBInstances[0].Endpoint.Address" --output text 2>/dev/null || echo "")
+if [ -d "terraform" ]; then
+    RDS_HOST=$(cd terraform && terraform output -raw rds_address 2>/dev/null || echo "")
+fi
+
+if [ -z "$RDS_HOST" ] || [ "$RDS_HOST" == "None" ]; then
+    RDS_HOST=$(aws rds describe-db-instances --db-instance-identifier "${PROJECT_NAME}-db" --region "$REGION" --query "DBInstances[0].Endpoint.Address" --output text 2>/dev/null || echo "")
+fi
 
 if [ -z "$RDS_HOST" ] || [ "$RDS_HOST" == "None" ]; then
     echo "Consultando desde ConfigMap de Kubernetes..."
@@ -21,6 +27,10 @@ if [ -z "$RDS_HOST" ] || [ "$RDS_HOST" == "None" ]; then
 fi
 
 echo "Conectando a RDS Host: $RDS_HOST"
+
+# Asegurar que el namespace exista y no haya pods residuales
+kubectl create namespace "$NAMESPACE" 2>/dev/null || true
+kubectl delete pod mysql-init-job -n "$NAMESPACE" --grace-period=0 --force 2>/dev/null || true
 
 # 2. Ejecutar init.sql utilizando un pod efimero de MySQL dentro de EKS
 echo "Ejecutando app/init.sql mediante Pod efimero de MySQL en el cluster..."

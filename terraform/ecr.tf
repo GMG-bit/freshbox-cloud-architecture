@@ -29,3 +29,29 @@ resource "aws_ecr_repository" "repos" {
     Environment = "production"
   }
 }
+
+# Import blocks nativos de Terraform (v1.5+) para repositorios pre-creados en el pipeline CI/CD
+import {
+  to = aws_ecr_repository.repos["frontend"]
+  id = "freshbox-frontend"
+}
+
+import {
+  to = aws_ecr_repository.repos["get-products"]
+  id = "freshbox-get-products"
+}
+
+import {
+  to = aws_ecr_repository.repos["create-product"]
+  id = "freshbox-create-product"
+}
+
+import {
+  to = aws_ecr_repository.repos["update-product"]
+  id = "freshbox-update-product"
+}
+
+import {
+  to = aws_ecr_repository.repos["delete-product"]
+  id = "freshbox-delete-product"
+}
