@@ -104,6 +104,11 @@ jobs:
             -backend-config="region=${AWS_REGION}" \
             -backend-config="encrypt=true"
         working-directory: ./terraform
+          # Importar repositorios ECR existentes al estado para evitar RepositoryAlreadyExistsException
+          for repo in frontend get-products create-product update-product delete-product; do
+            terraform import "aws_ecr_repository.repos[\"$repo\"]" "freshbox-$repo" 2>/dev/null || true
+          done
+        working-directory: ./terraform
 
       - name: Desplegar infraestructura base (VPC, SGs, RDS Multi-AZ, EKS) con Terraform
         run: terraform apply -auto-approve
