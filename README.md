@@ -2,8 +2,6 @@
 
 **Experiencia de Aprendizaje 2 (EA2) | Evaluación Parcial 2 | ARY1102 Arquitectura Cloud | DuocUC 2026**  
 **Autor:** Gaston Mardones González  
-**Docente Diseñador:** Ignacio A. Pastenet M.
-
 ---
 
 ## 1. Descripción del Proyecto y Evolución Arquitectónica
