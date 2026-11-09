@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FreshBox SpA - Tienda Orgánica (Serverless & Cloud-Native)</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="navbar">
+        <div class="container nav-content">
+            <div class="logo">
+                <span class="icon">🌱</span>
+                <h1>FreshBox <span>SpA</span></h1>
+            </div>
+            <div class="badge-env">
+                Arquitectura Híbrida: S3 + API Gateway + EKS + Serverless
+            </div>
+            <div class="cart-indicator" onclick="toggleCart()">
+                🛒 Carrito <span id="cart-count">0</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- Banner Informativo -->
+        <section class="hero-banner">
+            <h2>Alimentos Orgánicos Directo del Campo a tu Mesa</h2>
+            <p>Plataforma modernizada con alta disponibilidad, microservicios desacoplados y autoescalado serverless.</p>
+            <div class="config-bar">
+                <label for="api-url"><strong>API Gateway Endpoint:</strong></label>
+                <input type="text" id="api-url" placeholder="https://<api-id>.execute-api.us-east-1.amazonaws.com/prod" value="">
+                <button onclick="saveApiUrl()" class="btn-primary">Guardar</button>
+            </div>
+        </section>
+
+        <!-- Catálogo de Productos (Sincrónico vía EKS) -->
+        <section class="products-section">
+            <div class="section-header">
+                <h3>Catálogo de Productos Disponibles</h3>
+                <span class="source-tag">Vía EKS + RDS MySQL Multi-AZ</span>
+            </div>
+            <div id="products-grid" class="products-grid">
+                <div class="loading">Cargando catálogo orgánico...</div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal Carrito de Compras (Serverless vía DynamoDB + SQS) -->
+    <div id="cart-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🛒 Tu Carrito de Compras</h3>
+                <span class="close" onclick="toggleCart()">&times;</span>
+            </div>
+            <div class="source-tag">Persistencia NoSQL: DynamoDB (TTL 24h)</div>
+            <div id="cart-items" class="cart-items">
+                <p class="empty-cart">El carrito está vacío</p>
+            </div>
+            <div class="cart-summary">
+                <div class="total-row">
+                    <strong>Total a Pagar:</strong>
+                    <span id="cart-total">$0 CLP</span>
+                </div>
+                <button id="checkout-btn" class="btn-checkout" onclick="placeOrder()">Confirmar Pedido (Desacoplado)</button>
+            </div>
+            <div id="order-status" class="order-status"></div>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2026 FreshBox SpA - ARY1102 Arquitectura Cloud | DuocUC</p>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>
