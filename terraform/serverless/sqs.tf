@@ -5,19 +5,19 @@
 
 # 1. Dead Letter Queue (DLQ) para aislamiento de fallos tras 3 reintentos
 resource "aws_sqs_queue" "orders_dlq" {
-  name                      = "${var.project_name}-orders-dlq"
+  name                      = "${var.sqs_queue_name}-dlq"
   message_retention_seconds = 1209600 # 14 dias para analisis forense de mensajes fallidos
   sqs_managed_sse_enabled   = true
 
   tags = {
-    Name        = "${var.project_name}-orders-dlq"
+    Name        = "${var.sqs_queue_name}-dlq"
     Environment = var.environment
   }
 }
 
 # 2. Cola Principal de Procesamiento de Ordenes con Redrive Policy
 resource "aws_sqs_queue" "orders_queue" {
-  name                      = "${var.project_name}-orders-queue"
+  name                      = var.sqs_queue_name
   delay_seconds             = 0
   max_message_size          = 262144 # 256 KB
   message_retention_seconds = 345600 # 4 dias
@@ -31,7 +31,7 @@ resource "aws_sqs_queue" "orders_queue" {
   })
 
   tags = {
-    Name        = "${var.project_name}-orders-queue"
+    Name        = var.sqs_queue_name
     Environment = var.environment
   }
 }

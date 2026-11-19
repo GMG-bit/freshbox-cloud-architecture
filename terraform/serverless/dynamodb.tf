@@ -4,7 +4,7 @@
 # ==============================================================================
 
 resource "aws_dynamodb_table" "cart" {
-  name         = "${var.project_name}-cart"
+  name         = var.dynamodb_table_name
   billing_mode = "PAY_PER_REQUEST" # On-Demand para escalamiento a cero y ahorro maximo
   hash_key     = "userId"
   range_key    = "productId"
@@ -21,7 +21,7 @@ resource "aws_dynamodb_table" "cart" {
 
   # TTL de 24 horas para autolimpieza de carritos sin impacto operativo
   ttl {
-    attribute_name = "expire_at"
+    attribute_name = "expiresAt"
     enabled        = true
   }
 

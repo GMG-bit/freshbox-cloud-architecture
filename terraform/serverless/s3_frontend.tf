@@ -55,3 +55,30 @@ resource "aws_s3_bucket_policy" "frontend_public_read" {
     ]
   })
 }
+
+# ------------------------------------------------------------------------------
+# Carga automatica de artefactos Frontend a S3
+# ------------------------------------------------------------------------------
+resource "aws_s3_object" "index_html" {
+  bucket       = aws_s3_bucket.frontend.id
+  key          = "index.html"
+  source       = "${path.module}/../../app/S3Frontend/index.html"
+  content_type = "text/html"
+  etag         = filemd5("${path.module}/../../app/S3Frontend/index.html")
+}
+
+resource "aws_s3_object" "styles_css" {
+  bucket       = aws_s3_bucket.frontend.id
+  key          = "css/styles.css"
+  source       = "${path.module}/../../app/S3Frontend/css/styles.css"
+  content_type = "text/css"
+  etag         = filemd5("${path.module}/../../app/S3Frontend/css/styles.css")
+}
+
+resource "aws_s3_object" "app_js" {
+  bucket       = aws_s3_bucket.frontend.id
+  key          = "js/app.js"
+  source       = "${path.module}/../../app/S3Frontend/js/app.js"
+  content_type = "application/javascript"
+  etag         = filemd5("${path.module}/../../app/S3Frontend/js/app.js")
+}

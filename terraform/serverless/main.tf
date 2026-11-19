@@ -18,6 +18,10 @@ terraform {
   }
 }
 
+provider "aws" {
+  region = var.aws_region
+}
+
 # Rol de ejecucion para AWS Academy Learner Lab
 data "aws_iam_role" "lab_role" {
   name = "LabRole"

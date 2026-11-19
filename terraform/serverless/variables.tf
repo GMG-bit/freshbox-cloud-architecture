@@ -10,6 +10,18 @@ variable "project_name" {
   default     = "freshbox"
 }
 
+variable "dynamodb_table_name" {
+  description = "Nombre de la tabla DynamoDB para el carrito"
+  type        = string
+  default     = "carrito-freshbox"
+}
+
+variable "sqs_queue_name" {
+  description = "Nombre de la cola SQS para procesamiento de ordenes"
+  type        = string
+  default     = "ordenes-freshbox"
+}
+
 variable "environment" {
   description = "Ambiente de despliegue"
   type        = string
@@ -49,13 +61,13 @@ variable "db_host" {
 variable "db_user" {
   description = "Usuario de la base de datos MySQL"
   type        = string
-  default     = "admin"
+  default     = "alumno"
 }
 
 variable "db_password" {
   description = "Contrasena de la base de datos MySQL"
   type        = string
-  default     = "FreshBox2026!"
+  default     = "alumno123"
   sensitive   = true
 }
 
@@ -63,4 +75,10 @@ variable "db_name" {
   description = "Nombre de la base de datos MySQL"
   type        = string
   default     = "freshbox"
+}
+
+variable "db_port" {
+  description = "Puerto de conexion de la base de datos MySQL"
+  type        = string
+  default     = "3306"
 }
